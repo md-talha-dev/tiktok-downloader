@@ -1,38 +1,160 @@
 .App {
-    text-align: center;
-}
-
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+  text-align: center;
 }
 
 .App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+  background-color: #282c34;
+  padding: 20px;
+  color: white;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
 }
 
 .App-link {
-    color: #61dafb;
+  color: #61dafb;
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+/* Custom scrollbar for webkit browsers */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Animation for pulse effect */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* Smooth transitions for all elements */
+* {
+  transition: all 0.3s ease;
+}
+
+/* Custom backdrop blur support */
+@supports (backdrop-filter: blur(10px)) {
+  .backdrop-blur-lg {
+    backdrop-filter: blur(16px);
+  }
+}
+
+/* Fallback for browsers without backdrop-filter */
+@supports not (backdrop-filter: blur(10px)) {
+  .backdrop-blur-lg {
+    background: rgba(255, 255, 255, 0.15);
+  }
+}
+
+/* Loading animation */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Hover effects */
+.transform {
+  transform: translateZ(0);
+}
+
+.hover\:scale-105:hover {
+  transform: scale(1.05);
+}
+
+/* Text gradient animation */
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.bg-gradient-to-r {
+  background-size: 200% 200%;
+  animation: gradientShift 3s ease infinite;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .max-w-4xl {
+    max-width: 95%;
+  }
+  
+  .text-6xl {
+    font-size: 3rem;
+  }
+  
+  .text-xl {
+    font-size: 1.1rem;
+  }
+  
+  .space-x-6 > * + * {
+    margin-left: 1rem;
+  }
+  
+  .px-6 {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+/* Focus styles for accessibility */
+button:focus,
+textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.5);
+}
+
+/* Custom button hover effects */
+.bg-gradient-to-r:hover {
+  filter: brightness(1.1);
+}
+
+/* Thumbnail loading state */
+.thumbnail-loading {
+  background: linear-gradient(90deg, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.1) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
