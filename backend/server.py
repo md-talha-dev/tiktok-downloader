@@ -87,71 +87,79 @@ def get_ydl_opts(output_path: str):
         'no_warnings': False,
     }
 
-def download_single_video(url: str, download_id: str):
-    """Download a single TikTok video"""
+async def download_single_video_async(url: str, download_id: str):
+    """Download a single TikTok video asynchronously"""
     try:
         # Update status to downloading
-        asyncio.create_task(update_download_status(download_id, "downloading"))
+        await update_download_status(download_id, "downloading")
         
         output_filename = f"{download_id}.%(ext)s"
         output_path = DOWNLOADS_DIR / output_filename
         
         ydl_opts = get_ydl_opts(str(output_path))
         
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            # Extract info first
-            info = ydl.extract_info(url, download=False)
-            title = info.get('title', 'Unknown')
-            duration = info.get('duration', 0)
-            
-            # Download the video
-            ydl.download([url])
-            
-            # Find the downloaded file
-            downloaded_files = list(DOWNLOADS_DIR.glob(f"{download_id}.*"))
-            video_file = None
-            for file in downloaded_files:
-                if file.suffix in ['.mp4', '.webm', '.mkv']:
-                    video_file = file
-                    break
-            
-            if not video_file:
-                raise Exception("Downloaded video file not found")
-            
-            # Get file size
-            file_size = video_file.stat().st_size
-            
-            # Try to get thumbnail and convert to base64
-            thumbnail_base64 = None
-            thumbnail_files = list(DOWNLOADS_DIR.glob(f"{download_id}.webp")) + list(DOWNLOADS_DIR.glob(f"{download_id}.jpg"))
-            if thumbnail_files:
-                try:
-                    with open(thumbnail_files[0], 'rb') as f:
-                        thumbnail_base64 = base64.b64encode(f.read()).decode('utf-8')
-                    # Clean up thumbnail file
-                    thumbnail_files[0].unlink()
-                except Exception as e:
-                    logging.warning(f"Could not process thumbnail: {e}")
-            
-            # Update status to completed
-            asyncio.create_task(update_download_status(
-                download_id, 
-                "completed", 
-                filename=video_file.name,
-                file_size=file_size,
-                title=title,
-                duration=duration,
-                thumbnail=thumbnail_base64
-            ))
-            
-            # Clean up info json file
-            info_files = list(DOWNLOADS_DIR.glob(f"{download_id}.info.json"))
-            for info_file in info_files:
-                info_file.unlink()
+        # Run yt-dlp in thread pool to avoid blocking
+        loop = asyncio.get_event_loop()
+        
+        def run_ytdlp():
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                # Extract info first
+                info = ydl.extract_info(url, download=False)
+                title = info.get('title', 'Unknown')
+                duration = info.get('duration', 0)
                 
+                # Download the video
+                ydl.download([url])
+                
+                return title, duration
+        
+        title, duration = await loop.run_in_executor(executor, run_ytdlp)
+        
+        # Find the downloaded file
+        downloaded_files = list(DOWNLOADS_DIR.glob(f"{download_id}.*"))
+        video_file = None
+        for file in downloaded_files:
+            if file.suffix in ['.mp4', '.webm', '.mkv']:
+                video_file = file
+                break
+        
+        if not video_file:
+            raise Exception("Downloaded video file not found")
+        
+        # Get file size
+        file_size = video_file.stat().st_size
+        
+        # Try to get thumbnail and convert to base64
+        thumbnail_base64 = None
+        thumbnail_files = list(DOWNLOADS_DIR.glob(f"{download_id}.webp")) + list(DOWNLOADS_DIR.glob(f"{download_id}.jpg"))
+        if thumbnail_files:
+            try:
+                with open(thumbnail_files[0], 'rb') as f:
+                    thumbnail_base64 = base64.b64encode(f.read()).decode('utf-8')
+                # Clean up thumbnail file
+                thumbnail_files[0].unlink()
+            except Exception as e:
+                logging.warning(f"Could not process thumbnail: {e}")
+        
+        # Update status to completed
+        await update_download_status(
+            download_id, 
+            "completed", 
+            filename=video_file.name,
+            file_size=file_size,
+            title=title,
+            duration=duration,
+            thumbnail=thumbnail_base64
+        )
+        
+        # Clean up info json file
+        info_files = list(DOWNLOADS_DIR.glob(f"{download_id}.info.json"))
+        for info_file in info_files:
+            info_file.unlink()
+            
     except Exception as e:
         logging.error(f"Download failed for {url}: {str(e)}")
-        asyncio.create_task(update_download_status(download_id, "failed", error_message=str(e)))
+        await update_download_status(download_id, "failed", error_message=str(e))
 
 async def update_download_status(download_id: str, status: str, **kwargs):
     """Update download status in database"""
@@ -190,7 +198,7 @@ async def download_videos(request: DownloadRequest, background_tasks: Background
         await db.downloads.insert_one(download_record.dict())
         
         # Add background task
-        background_tasks.add_task(download_single_video, url, download_id)
+        background_tasks.add_task(download_single_video_async, url, download_id)
         download_tasks.append(download_id)
     
     # Store batch info
